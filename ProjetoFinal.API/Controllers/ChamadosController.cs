@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using ProjetoFinal.API.Models;
 using ProjetoFinal.API.Services;
+using ProjetoFinal.API.Models.Enums;
 
 namespace ProjetoFinal.API.Controllers
 {

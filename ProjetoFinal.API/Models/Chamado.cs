@@ -1,4 +1,6 @@
-namespace ProjetoFinal.API.Models
+namespace ProjetoFinal.API.Models;
+using ProjetoFinal.API.Models.Enums;
+
 {
     public class Chamado
     {
