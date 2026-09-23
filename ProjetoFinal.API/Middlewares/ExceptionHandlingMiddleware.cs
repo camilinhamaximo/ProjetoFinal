@@ -6,12 +6,10 @@ namespace ProjetoFinal.API.Middlewares
     public class ExceptionHandlingMiddleware
     {
         private readonly RequestDelegate _next;
-        private readonly ILogger<ExceptionHandlingMiddleware> _logger;
 
-        public ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
+        public ExceptionHandlingMiddleware(RequestDelegate next)
         {
             _next = next;
-            _logger = logger;
         }
 
         public async Task InvokeAsync(HttpContext context)
@@ -22,7 +20,6 @@ namespace ProjetoFinal.API.Middlewares
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Exceção capturada no middleware: {Message}", ex.Message);
                 await HandleExceptionAsync(context, ex);
             }
         }
@@ -30,10 +27,9 @@ namespace ProjetoFinal.API.Middlewares
         private static Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
             context.Response.ContentType = "application/json";
-
+            
             var statusCode = exception switch
             {
-                ArgumentException => HttpStatusCode.BadRequest,
                 InvalidOperationException => HttpStatusCode.BadRequest,
                 KeyNotFoundException => HttpStatusCode.NotFound,
                 _ => HttpStatusCode.InternalServerError
@@ -45,13 +41,10 @@ namespace ProjetoFinal.API.Middlewares
             {
                 status = context.Response.StatusCode,
                 erro = exception.Message,
-                detalhe = statusCode == HttpStatusCode.InternalServerError
-                    ? "Ocorreu um erro interno na aplicação. Tente novamente mais tarde."
-                    : null
+                detalhes = statusCode == HttpStatusCode.InternalServerError ? "Ocorreu um erro interno no servidor." : null
             };
 
-            var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-            return context.Response.WriteAsync(JsonSerializer.Serialize(response, jsonOptions));
+            return context.Response.WriteAsync(JsonSerializer.Serialize(response));
         }
     }
 }

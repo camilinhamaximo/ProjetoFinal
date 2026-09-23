@@ -7,25 +7,25 @@ namespace ProjetoFinal.API.Data
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-        public DbSet<Categoria> Categorias => Set<Categoria>();
-        public DbSet<Chamado> Chamados => Set<Chamado>();
-        public DbSet<Interacao> Interacoes => Set<Interacao>();
+        public DbSet<Categoria> Categorias { get; set; }
+        public DbSet<Chamado> Chamados { get; set; }
+        public DbSet<Interacao> Interacoes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // Mapeamento do relacionamento Categoria -> Chamados (1:N)
-            modelBuilder.Entity<Chamado>()
-                .HasOne(c => c.Categoria)
-                .WithMany(cat => cat.Chamados)
-                .HasForeignKey(c => c.CategoriaId)
+            // Impedir exclusão de Categoria se houver Chamados associados 
+            modelBuilder.Entity<Categoria>()
+                .HasMany(c => c.Chamados)
+                .WithOne(ch => ch.Categoria)
+                .HasForeignKey(ch => ch.CategoriaId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Mapeamento do relacionamento Chamado -> Interacoes (1:N)
-            modelBuilder.Entity<Interacao>()
-                .HasOne(i => i.Chamado)
-                .WithMany(c => c.Interacoes)
+            // Relacionamento Chamado x Interacao
+            modelBuilder.Entity<Chamado>()
+                .HasMany(ch => ch.Interacoes)
+                .WithOne(i => i.Chamado)
                 .HasForeignKey(i => i.ChamadoId)
                 .OnDelete(DeleteBehavior.Cascade);
         }
