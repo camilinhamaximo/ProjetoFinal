@@ -15,19 +15,33 @@ namespace ProjetoFinal.API.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // Impedir exclusão de Categoria se houver Chamados associados 
-            modelBuilder.Entity<Categoria>()
-                .HasMany(c => c.Chamados)
-                .WithOne(ch => ch.Categoria)
-                .HasForeignKey(ch => ch.CategoriaId)
-                .OnDelete(DeleteBehavior.Restrict);
+            // Validações e Relacionamentos
+            modelBuilder.Entity<Categoria>(entity =>
+            {
+                entity.HasKey(c => c.Id);
+                entity.Property(c => c.Nome).IsRequired().HasMaxLength(200);
+            });
 
-            // Relacionamento Chamado x Interacao
-            modelBuilder.Entity<Chamado>()
-                .HasMany(ch => ch.Interacoes)
-                .WithOne(i => i.Chamado)
-                .HasForeignKey(i => i.ChamadoId)
-                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<Chamado>(entity =>
+            {
+                entity.HasKey(c => c.Id);
+                entity.Property(c => c.Titulo).IsRequired().HasMaxLength(200);
+                entity.Property(c => c.Descricao).IsRequired();
+                entity.HasOne(c => c.Categoria)
+                      .WithMany(cat => cat.Chamados)
+                      .HasForeignKey(c => c.CategoriaId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<Interacao>(entity =>
+            {
+                entity.HasKey(i => i.Id);
+                entity.Property(i => i.Mensagem).IsRequired();
+                entity.HasOne(i => i.Chamado)
+                      .WithMany(ch => ch.Interacoes)
+                      .HasForeignKey(i => i.ChamadoId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
         }
     }
 }
