@@ -1,4 +1,4 @@
-namespace DeskFlow.API.Models.Entities
+namespace ProjetoFinal.API.Models.Entities
 {
     public class Categoria
     {
