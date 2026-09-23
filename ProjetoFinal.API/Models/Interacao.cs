@@ -1,6 +1,6 @@
 using System;
 
-namespace ProjetoFinal.API.Models.Entities
+namespace ProjetoFinal.API.Models
 {
     public class Interacao
     {

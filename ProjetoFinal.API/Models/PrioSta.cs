@@ -1,16 +1,14 @@
+using System;
+
 namespace ProjetoFinal.API.Models
 {
-    public enum PrioridadeChamado
+    public class Interacao
     {
-        Baixa = 1,
-        Media = 2,
-        Alta = 3
-    }
-
-    public enum StatusChamado
-    {
-        Aberto = 1,
-        EmAndamento = 2,
-        Fechado = 3
+        public int Id { get; set; }
+        public int ChamadoId { get; set; }
+        public Chamado? Chamado { get; set; }
+        public string Autor { get; set; } = string.Empty;
+        public string Mensagem { get; set; } = string.Empty;
+        public DateTime DataRegistro { get; set; } = DateTime.UtcNow;
     }
 }
