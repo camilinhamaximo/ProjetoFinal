@@ -1,22 +1,23 @@
-namespace ProjetoFinal.API.Models;
-using ProjetoFinal.API.Models.Enums;
+using System;
+using System.Collections.Generic;
 
+namespace ProjetoFinal.API.Models
 {
     public class Chamado
     {
         public int Id { get; set; }
         public string Titulo { get; set; } = string.Empty;
         public string Descricao { get; set; } = string.Empty;
-        public PrioridadeChamado Prioridade { get; set; }
-        public StatusChamado Status { get; set; }
-        public string SolicitanteNome { get; set; } = string.Empty;
-        public DateTime DataAbertura { get; set; }
-        public DateTime? DataFechamento { get; set; }
-        public string? Solucao { get; set; }
+        public PrioridadeChamada Prioridade { get; set; }
+        public StatusChamado Status { get; set; } = StatusChamado.Aberto;
+        public DateTime DataCriacao { get; set; } = DateTime.UtcNow;
+        public DateTime? DataAtualizacao { get; set; }
 
+        // Relacionamento com Categoria
         public int CategoriaId { get; set; }
         public Categoria? Categoria { get; set; }
 
+        // Relacionamento com Interações
         public ICollection<Interacao> Interacoes { get; set; } = new List<Interacao>();
     }
 }
