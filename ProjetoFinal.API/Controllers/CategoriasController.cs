@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using ProjetoFinal.API.Models;
+using ProjetoFinal.API.Contracts;
+using ProjetoFinal.API.DTO.Categoria;
 using ProjetoFinal.API.Services;
 
 namespace ProjetoFinal.API.Controllers

@@ -1,5 +1,4 @@
-using System;
-using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace ProjetoFinal.API.Models
 {
@@ -8,16 +7,35 @@ namespace ProjetoFinal.API.Models
         public int Id { get; set; }
         public string Titulo { get; set; } = string.Empty;
         public string Descricao { get; set; } = string.Empty;
-        public PrioridadeChamada Prioridade { get; set; }
-        public StatusChamado Status { get; set; } = StatusChamado.Aberto;
         public DateTime DataCriacao { get; set; } = DateTime.UtcNow;
-        public DateTime? DataAtualizacao { get; set; }
+        
+        // Enum de Status e Prioridade
+        public StatusChamado Status { get; set; } = StatusChamado.Aberto;
+        public PrioridadeChamado Prioridade { get; set; } = PrioridadeChamado.Media;
 
-        // Relacionamento com Categoria
+        // Chave Estrangeira e Navegação para Categoria
         public int CategoriaId { get; set; }
+        
+        [JsonIgnore]
         public Categoria? Categoria { get; set; }
 
-        // Relacionamento com Interações
+        // Relacionamento 1:N com Interações
         public ICollection<Interacao> Interacoes { get; set; } = new List<Interacao>();
+    }
+
+    public enum StatusChamado
+    {
+        Aberto = 1,
+        EmAndamento = 2,
+        Resolvido = 3,
+        Fechado = 4
+    }
+
+    public enum PrioridadeChamado
+    {
+        Baixa = 1,
+        Media = 2,
+        Alta = 3,
+        Urgente = 4
     }
 }

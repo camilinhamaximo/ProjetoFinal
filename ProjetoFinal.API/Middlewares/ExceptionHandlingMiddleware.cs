@@ -6,10 +6,12 @@ namespace ProjetoFinal.API.Middlewares
     public class ExceptionHandlingMiddleware
     {
         private readonly RequestDelegate _next;
+        private readonly ILogger<ExceptionHandlingMiddleware> _logger;
 
-        public ExceptionHandlingMiddleware(RequestDelegate next)
+        public ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
         {
             _next = next;
+            _logger = logger;
         }
 
         public async Task InvokeAsync(HttpContext context)
@@ -20,6 +22,7 @@ namespace ProjetoFinal.API.Middlewares
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Ocorreu um erro não tratado.");
                 await HandleExceptionAsync(context, ex);
             }
         }
@@ -27,21 +30,13 @@ namespace ProjetoFinal.API.Middlewares
         private static Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
             context.Response.ContentType = "application/json";
-            
-            var statusCode = exception switch
-            {
-                InvalidOperationException => HttpStatusCode.BadRequest,
-                KeyNotFoundException => HttpStatusCode.NotFound,
-                _ => HttpStatusCode.InternalServerError
-            };
-
-            context.Response.StatusCode = (int)statusCode;
+            context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 
             var response = new
             {
-                status = context.Response.StatusCode,
-                erro = exception.Message,
-                detalhes = statusCode == HttpStatusCode.InternalServerError ? "Ocorreu um erro interno no servidor." : null
+                StatusCode = context.Response.StatusCode,
+                Message = "Ocorreu um erro interno no servidor.",
+                Detail = exception.Message
             };
 
             return context.Response.WriteAsync(JsonSerializer.Serialize(response));
