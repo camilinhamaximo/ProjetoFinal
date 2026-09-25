@@ -94,3 +94,94 @@ VALUES (N'20260923150111_CreateInicial', N'10.0.12');
 COMMIT;
 GO
 
+BEGIN TRANSACTION;
+DECLARE @var3 nvarchar(max);
+SELECT @var3 = QUOTENAME([d].[name])
+FROM [sys].[default_constraints] [d]
+INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
+WHERE ([d].[parent_object_id] = OBJECT_ID(N'[Chamados]') AND [c].[name] = N'DataAtualizacao');
+IF @var3 IS NOT NULL EXEC(N'ALTER TABLE [Chamados] DROP CONSTRAINT ' + @var3 + ';');
+ALTER TABLE [Chamados] DROP COLUMN [DataAtualizacao];
+
+DECLARE @var4 nvarchar(max);
+SELECT @var4 = QUOTENAME([d].[name])
+FROM [sys].[default_constraints] [d]
+INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
+WHERE ([d].[parent_object_id] = OBJECT_ID(N'[Chamados]') AND [c].[name] = N'Titulo');
+IF @var4 IS NOT NULL EXEC(N'ALTER TABLE [Chamados] DROP CONSTRAINT ' + @var4 + ';');
+ALTER TABLE [Chamados] ALTER COLUMN [Titulo] nvarchar(max) NOT NULL;
+
+INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+VALUES (N'20260923230815_AtualizacaoModelChamado', N'10.0.12');
+
+COMMIT;
+GO
+
+BEGIN TRANSACTION;
+INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+VALUES (N'20260923231218_TesteDbContextFactory', N'10.0.12');
+
+COMMIT;
+GO
+
+BEGIN TRANSACTION;
+DECLARE @var5 nvarchar(max);
+SELECT @var5 = QUOTENAME([d].[name])
+FROM [sys].[default_constraints] [d]
+INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
+WHERE ([d].[parent_object_id] = OBJECT_ID(N'[Interacoes]') AND [c].[name] = N'DataCriacao');
+IF @var5 IS NOT NULL EXEC(N'ALTER TABLE [Interacoes] DROP CONSTRAINT ' + @var5 + ';');
+ALTER TABLE [Interacoes] DROP COLUMN [DataCriacao];
+
+DECLARE @var6 nvarchar(max);
+SELECT @var6 = QUOTENAME([d].[name])
+FROM [sys].[default_constraints] [d]
+INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
+WHERE ([d].[parent_object_id] = OBJECT_ID(N'[Chamados]') AND [c].[name] = N'DataCriacao');
+IF @var6 IS NOT NULL EXEC(N'ALTER TABLE [Chamados] DROP CONSTRAINT ' + @var6 + ';');
+ALTER TABLE [Chamados] DROP COLUMN [DataCriacao];
+
+ALTER TABLE [Interacoes] ADD [Autor] nvarchar(200) NOT NULL DEFAULT N'';
+
+ALTER TABLE [Interacoes] ADD [DataRegistro] datetimeoffset NOT NULL DEFAULT '0001-01-01T00:00:00.0000000+00:00';
+
+DECLARE @var7 nvarchar(max);
+SELECT @var7 = QUOTENAME([d].[name])
+FROM [sys].[default_constraints] [d]
+INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
+WHERE ([d].[parent_object_id] = OBJECT_ID(N'[Chamados]') AND [c].[name] = N'Titulo');
+IF @var7 IS NOT NULL EXEC(N'ALTER TABLE [Chamados] DROP CONSTRAINT ' + @var7 + ';');
+ALTER TABLE [Chamados] ALTER COLUMN [Titulo] nvarchar(200) NOT NULL;
+
+ALTER TABLE [Chamados] ADD [DataAbertura] datetimeoffset NOT NULL DEFAULT '0001-01-01T00:00:00.0000000+00:00';
+
+ALTER TABLE [Chamados] ADD [DataFechamento] datetimeoffset NULL;
+
+ALTER TABLE [Chamados] ADD [SolicitanteNome] nvarchar(200) NOT NULL DEFAULT N'';
+
+ALTER TABLE [Chamados] ADD [Solucao] nvarchar(max) NULL;
+
+ALTER TABLE [Chamados] ADD CONSTRAINT [CK_Chamados_Prioridade] CHECK ([Prioridade] IN (1, 2, 3));
+
+ALTER TABLE [Chamados] ADD CONSTRAINT [CK_Chamados_Status] CHECK ([Status] IN (1, 2, 3));
+
+INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+VALUES (N'20260925123252_AtualizacaoEstrutura', N'10.0.12');
+
+COMMIT;
+GO
+
+BEGIN TRANSACTION;
+INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+VALUES (N'20260925123450_AtualizacaoEstrutura1', N'10.0.12');
+
+COMMIT;
+GO
+
+BEGIN TRANSACTION;
+INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+VALUES (N'20260925123909_AtualizacaoEstrutura2', N'10.0.12');
+
+COMMIT;
+GO
+
