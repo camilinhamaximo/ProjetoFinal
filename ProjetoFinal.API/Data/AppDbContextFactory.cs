@@ -1,31 +1,31 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
-using System.IO;
 
-namespace ProjetoFinal.API.Data
+namespace ProjetoFinal.API.Data;
+
+public sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 {
-    public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
+    public AppDbContext CreateDbContext(string[] args)
     {
-        public AppDbContext CreateDbContext(string[] args)
+        var configuration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
+            .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: false)
+            .AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: false)
+            .AddEnvironmentVariables()
+            .Build();
+
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        if (string.IsNullOrWhiteSpace(connectionString))
         {
-            // Constrói a configuração para ler o ficheiro appsettings.json
-            IConfigurationRoot configuration = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .AddJsonFile($"appsettings.Development.json", optional: true)
-                .Build();
-
-            // Obtém a string de conexão configurada
-            var connectionString = configuration.GetConnectionString("DefaultConnection");
-
-            // Configura as opções do DbContext
-            var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
-            
-            // Caso utilize SQL Server (ajuste para UseSqlite, UseNpgsql, etc., conforme o seu banco):
-            optionsBuilder.UseSqlServer(connectionString);
-
-            return new AppDbContext(optionsBuilder.Options);
+            throw new InvalidOperationException(
+                "A connection string 'DefaultConnection' deve ser configurada por variável de ambiente ou arquivo local ignorado pelo Git.");
         }
+
+        var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
+        optionsBuilder.UseSqlServer(connectionString);
+
+        return new AppDbContext(optionsBuilder.Options);
     }
 }

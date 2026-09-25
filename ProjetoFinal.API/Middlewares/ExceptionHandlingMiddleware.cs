@@ -1,45 +1,48 @@
-using System.Net;
-using System.Text.Json;
+using ProjetoFinal.API.Contracts;
+using ProjetoFinal.API.Exceptions;
 
-namespace ProjetoFinal.API.Middlewares
+namespace ProjetoFinal.API.Middlewares;
+
+public sealed class ExceptionHandlingMiddleware
 {
-    public class ExceptionHandlingMiddleware
+    private readonly RequestDelegate _next;
+    private readonly ILogger<ExceptionHandlingMiddleware> _logger;
+
+    public ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
     {
-        private readonly RequestDelegate _next;
-        private readonly ILogger<ExceptionHandlingMiddleware> _logger;
+        _next = next;
+        _logger = logger;
+    }
 
-        public ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
+    public async Task InvokeAsync(HttpContext context)
+    {
+        try
         {
-            _next = next;
-            _logger = logger;
+            await _next(context);
         }
-
-        public async Task InvokeAsync(HttpContext context)
+        catch (Exception exception)
         {
-            try
-            {
-                await _next(context);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Ocorreu um erro não tratado.");
-                await HandleExceptionAsync(context, ex);
-            }
-        }
+            _logger.LogError(
+                "Unhandled exception. Type: {ExceptionType}; Method: {Method}; Path: {Path}",
+                exception.GetType().Name,
+                context.Request.Method,
+                context.Request.Path);
 
-        private static Task HandleExceptionAsync(HttpContext context, Exception exception)
+            await HandleExceptionAsync(context, exception);
+        }
+    }
+
+    private static Task HandleExceptionAsync(HttpContext context, Exception exception)
+    {
+        var response = exception switch
         {
-            context.Response.ContentType = "application/json";
-            context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+            RequestValidationException validation => new ApiErrorResponse(400, "VALIDATION_ERROR", validation.Message),
+            ResourceNotFoundException notFound => new ApiErrorResponse(404, "NOT_FOUND", notFound.Message),
+            BusinessRuleViolationException businessRule => new ApiErrorResponse(409, "BUSINESS_RULE_VIOLATION", businessRule.Message),
+            _ => new ApiErrorResponse(500, "INTERNAL_ERROR", "Ocorreu um erro interno no servidor.")
+        };
 
-            var response = new
-            {
-                StatusCode = context.Response.StatusCode,
-                Message = "Ocorreu um erro interno no servidor.",
-                Detail = exception.Message
-            };
-
-            return context.Response.WriteAsync(JsonSerializer.Serialize(response));
-        }
+        context.Response.StatusCode = response.Status;
+        return context.Response.WriteAsJsonAsync(response);
     }
 }

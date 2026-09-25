@@ -1,69 +1,81 @@
 using Microsoft.AspNetCore.Mvc;
-using ProjetoFinal.API.Models;
+using ProjetoFinal.API.Contracts;
+using ProjetoFinal.API.DTOs.Chamados;
 using ProjetoFinal.API.Services;
 
 namespace ProjetoFinal.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/chamados")]
+[ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status500InternalServerError)]
 public class ChamadosController : ControllerBase
 {
-    private readonly ChamadoService _chamadoService;
+    private readonly IChamadoService _chamadoService;
 
-    public ChamadosController(ChamadoService chamadoService)
+    public ChamadosController(IChamadoService chamadoService)
     {
         _chamadoService = chamadoService;
     }
 
     [HttpGet]
-    public async Task<IActionResult> Get()
+    [ProducesResponseType(typeof(IReadOnlyList<ChamadoResumoResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<IReadOnlyList<ChamadoResumoResponse>>> Get([FromQuery] ChamadoFiltroRequest filtro)
     {
-        var chamados = await _chamadoService.ObterTodosAsync();
+        var chamados = await _chamadoService.ObterTodosAsync(filtro);
         return Ok(chamados);
     }
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(int id)
+    [HttpGet("{id:int}")]
+    [ProducesResponseType(typeof(ChamadoDetalheResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ChamadoDetalheResponse>> GetById(int id)
     {
         var chamado = await _chamadoService.ObterPorIdAsync(id);
-        if (chamado == null) return NotFound(new { mensagem = "Chamado não encontrado." });
         return Ok(chamado);
     }
 
     [HttpPost]
-    public async Task<IActionResult> Post([FromBody] Chamado chamado)
+    [ProducesResponseType(typeof(ChamadoDetalheResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ChamadoDetalheResponse>> Post([FromBody] AbrirChamadoRequest request)
     {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
-        
-        var novoChamado = await _chamadoService.CriarAsync(chamado);
+        var novoChamado = await _chamadoService.AbrirAsync(request);
         return CreatedAtAction(nameof(GetById), new { id = novoChamado.Id }, novoChamado);
     }
 
-    [HttpPatch("{id}/status")]
-    public async Task<IActionResult> PatchStatus(int id, [FromBody] StatusChamado novoStatus)
+    [HttpPatch("{id:int}/iniciar")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Iniciar(int id)
     {
-        var sucesso = await _chamadoService.AtualizarStatusAsync(id, novoStatus);
-        if (!sucesso) return NotFound(new { mensagem = "Chamado não encontrado." });
-        
+        await _chamadoService.IniciarAsync(id);
         return NoContent();
     }
 
-    [HttpPost("{id}/interacoes")]
-    public async Task<IActionResult> PostInteracao(int id, [FromBody] CriarInteracaoDto dto)
+    [HttpPatch("{id:int}/encerrar")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Encerrar(int id, [FromBody] EncerrarChamadoRequest request)
     {
-        if (dto == null || string.IsNullOrWhiteSpace(dto.Mensagem))
-            return BadRequest(new { mensagem = "A mensagem da interação não pode ser vazia." });
-
-        var interacao = await _chamadoService.AdicionarInteracaoAsync(id, dto.Mensagem);
-        if (interacao == null)
-            return BadRequest(new { mensagem = "Não foi possível adicionar a interação. Verifique se o chamado existe." });
-
-        return Ok(interacao);
+        await _chamadoService.EncerrarAsync(id, request);
+        return NoContent();
     }
-}
 
-// DTO para tratar a entrada JSON da interação: { "mensagem": "Texto aqui" }
-public class CriarInteracaoDto
-{
-    public string Mensagem { get; set; } = string.Empty;
+    [HttpPost("{id:int}/interacoes")]
+    [ProducesResponseType(typeof(InteracaoResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<InteracaoResponse>> PostInteracao(int id, [FromBody] CriarInteracaoRequest request)
+    {
+        var interacao = await _chamadoService.AdicionarInteracaoAsync(id, request);
+        return CreatedAtAction(nameof(GetById), new { id }, interacao);
+    }
 }
