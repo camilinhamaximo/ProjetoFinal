@@ -1,64 +1,88 @@
-using Microsoft.EntityFrameworkCore;
-using ProjetoFinal.API.Data;
+using ProjetoFinal.API.DTOs.Categorias;
+using ProjetoFinal.API.Exceptions;
 using ProjetoFinal.API.Models;
+using ProjetoFinal.API.Repositories;
 
-namespace ProjetoFinal.API.Services
+namespace ProjetoFinal.API.Services;
+
+public interface ICategoriaService
 {
-    public interface ICategoriaService
+    Task<IReadOnlyList<CategoriaResponse>> ObterTodasAsync();
+    Task<CategoriaResponse> ObterPorIdAsync(int id);
+    Task<CategoriaResponse> CriarAsync(CriarCategoriaRequest request);
+    Task AtualizarAsync(int id, AtualizarCategoriaRequest request);
+    Task DeletarAsync(int id);
+}
+
+public sealed class CategoriaService(ICategoriaRepository repository) : ICategoriaService
+{
+    public async Task<IReadOnlyList<CategoriaResponse>> ObterTodasAsync()
     {
-        Task<IEnumerable<Categoria>> ObterTodasAsync();
-        Task<Categoria?> ObterPorIdAsync(int id);
-        Task<Categoria> CriarAsync(Categoria categoria);
-        Task AtualizarAsync(int id, Categoria categoria);
-        Task DeletarAsync(int id);
+        var categorias = await repository.ObterTodasAsync();
+        return categorias.Select(ParaResponse).ToList();
     }
 
-    public class CategoriaService : ICategoriaService
+    public async Task<CategoriaResponse> ObterPorIdAsync(int id)
     {
-        private readonly AppDbContext _context;
+        ValidarId(id);
+        var categoria = await repository.ObterPorIdAsync(id)
+            ?? throw new ResourceNotFoundException("Categoria não encontrada.");
 
-        public CategoriaService(AppDbContext context) => _context = context;
+        return ParaResponse(categoria);
+    }
 
-        public async Task<IEnumerable<Categoria>> ObterTodasAsync() =>
-            await _context.Categorias.AsNoTracking().ToListAsync();
+    public async Task<CategoriaResponse> CriarAsync(CriarCategoriaRequest request)
+    {
+        var categoria = new Categoria { Nome = ValidarNome(request.Nome) };
 
-        public async Task<Categoria?> ObterPorIdAsync(int id) =>
-            await _context.Categorias.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
+        await repository.AdicionarAsync(categoria);
+        await repository.SalvarAlteracoesAsync();
+        return ParaResponse(categoria);
+    }
 
-        public async Task<Categoria> CriarAsync(Categoria categoria)
+    public async Task AtualizarAsync(int id, AtualizarCategoriaRequest request)
+    {
+        ValidarId(id);
+        var categoriaExistente = await repository.ObterParaAtualizacaoAsync(id)
+            ?? throw new ResourceNotFoundException("Categoria não encontrada.");
+
+        categoriaExistente.Nome = ValidarNome(request.Nome);
+        await repository.SalvarAlteracoesAsync();
+    }
+
+    public async Task DeletarAsync(int id)
+    {
+        ValidarId(id);
+        var categoria = await repository.ObterParaAtualizacaoAsync(id)
+            ?? throw new ResourceNotFoundException("Categoria não encontrada.");
+
+        if (await repository.PossuiChamadosAsync(id))
         {
-            if (string.IsNullOrWhiteSpace(categoria.Nome))
-                throw new ArgumentException("O nome da categoria é obrigatório.");
-
-            _context.Categorias.Add(categoria);
-            await _context.SaveChangesAsync();
-            return categoria;
+            throw new BusinessRuleViolationException("Não é possível excluir uma categoria com chamados associados.");
         }
 
-        public async Task AtualizarAsync(int id, Categoria categoria)
+        repository.Remover(categoria);
+        await repository.SalvarAlteracoesAsync();
+    }
+
+    private static string ValidarNome(string nome)
+    {
+        if (string.IsNullOrWhiteSpace(nome))
         {
-            var categoriaExistente = await _context.Categorias.FindAsync(id);
-            if (categoriaExistente == null)
-                throw new KeyNotFoundException($"Categoria com ID {id} não foi encontrada.");
-
-            if (string.IsNullOrWhiteSpace(categoria.Nome))
-                throw new ArgumentException("O nome da categoria é obrigatório.");
-
-            categoriaExistente.Nome = categoria.Nome;
-            await _context.SaveChangesAsync();
+            throw new RequestValidationException("O nome da categoria é obrigatório.");
         }
 
-        public async Task DeletarAsync(int id)
+        return nome.Trim();
+    }
+
+    private static void ValidarId(int id)
+    {
+        if (id <= 0)
         {
-            var categoria = await _context.Categorias.Include(c => c.Chamados).FirstOrDefaultAsync(c => c.Id == id);
-            if (categoria == null)
-                throw new KeyNotFoundException($"Categoria com ID {id} não foi encontrada.");
-
-            if (categoria.Chamados != null && categoria.Chamados.Any())
-                throw new InvalidOperationException("Não é possível excluir uma categoria que possui chamados associados.");
-
-            _context.Categorias.Remove(categoria);
-            await _context.SaveChangesAsync();
+            throw new RequestValidationException("O identificador da categoria deve ser positivo.");
         }
     }
+
+    private static CategoriaResponse ParaResponse(Categoria categoria) =>
+        new(categoria.Id, categoria.Nome);
 }
